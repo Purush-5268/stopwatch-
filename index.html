@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Clock & Stopwatch</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: #0f0f1a;
+      font-family: 'Orbitron', sans-serif;
+      color: #00ffff;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .clock-circle {
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      border: 5px solid #00ffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 20px #00ffff, 0 0 40px #00ffff inset;
+      margin-bottom: 20px;
+    }
+
+    .clock, .stopwatch {
+      font-size: 2rem;
+      text-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff;
+    }
+
+    .date-box {
+      padding: 15px 30px;
+      border: 2px solid #00ffff;
+      border-radius: 10px;
+      background: rgba(0, 255, 255, 0.05);
+      box-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff inset;
+      font-size: 1.2rem;
+      color: #00ffff;
+      margin-bottom: 20px;
+    }
+
+    .icon-btn-top {
+      position: absolute;
+      top: 20px;
+      background: transparent;
+      border: none;
+      font-size: 1.8rem;
+      color: #00ffff;
+      cursor: pointer;
+      padding: 10px;
+    }
+
+    .back-btn {
+      left: 20px;
+    }
+
+    .stopwatch-btn {
+      right: 20px;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+      justify-content: center;
+    }
+
+    .controls button {
+      background-color: transparent;
+      border: 2px solid #00ffff;
+      padding: 10px 20px;
+      border-radius: 30px;
+      color: #00ffff;
+      font-size: 16px;
+      cursor: pointer;
+      box-shadow: 0 0 10px #00ffff;
+      transition: all 0.3s ease;
+    }
+
+    .controls button:hover {
+      background-color: #00ffff;
+      color: #0f0f1a;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      max-height: 200px;
+      overflow-y: auto;
+      width: 100%;
+      max-width: 300px;
+    }
+
+    ul li {
+      background: rgba(0, 255, 255, 0.1);
+      border: 1px solid #00ffff;
+      border-radius: 10px;
+      padding: 8px 15px;
+      margin: 5px 0;
+      text-align: center;
+    }
+
+    #stopwatchSection {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    @media (max-width: 600px) {
+      .clock, .stopwatch {
+        font-size: 1.5rem;
+      }
+      .controls {
+        flex-direction: column;
+      }
+      .controls button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Back Icon -->
+  <button class="icon-btn-top back-btn" id="backIcon" onclick="switchToClock()" style="display: none;">🔙</button>
+
+  <!-- Stopwatch Icon -->
+  <button class="icon-btn-top stopwatch-btn" id="stopwatchIcon" onclick="switchToStopwatch()">⏱️</button>
+
+  <!-- Clock Section -->
+  <div id="clockSection">
+    <div class="clock-circle">
+      <div class="clock" id="clock">00:00:00</div>
+    </div>
+    <div class="date-box" id="date">DD/MM/YYYY</div>
+  </div>
+
+  <!-- Stopwatch Section -->
+  <div id="stopwatchSection">
+    <div class="stopwatch" id="stopwatch">00:00:00</div>
+    <div class="controls">
+      <button onclick="startStopwatch()">Start</button>
+      <button onclick="stopStopwatch()">Stop</button>
+      <button onclick="resetStopwatch()">Reset</button>
+      <button onclick="getTime()">Lap</button>
+      <button onclick="clearTimes()">Clear Laps</button>
+    </div>
+    <ul id="timeList"></ul>
+  </div>
+
+  <script>
+    // Real-Time Clock and Date
+    function updateClock() {
+      const now = new Date();
+      const hrs = String(now.getHours()).padStart(2, '0');
+      const mins = String(now.getMinutes()).padStart(2, '0');
+      const secs = String(now.getSeconds()).padStart(2, '0');
+      document.getElementById("clock").textContent = `${hrs}:${mins}:${secs}`;
+
+      const day = String(now.getDate()).padStart(2, '0');
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const year = now.getFullYear();
+      document.getElementById("date").textContent = `${day}/${month}/${year}`;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // Stopwatch
+    let stopwatchInterval, startTime, elapsed = 0, lapCount = 0;
+
+    function updateStopwatch() {
+      const diff = Date.now() - startTime + elapsed;
+      const hrs = String(Math.floor(diff / 3600000)).padStart(2, '0');
+      const mins = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
+      const secs = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
+      document.getElementById("stopwatch").textContent = `${hrs}:${mins}:${secs}`;
+    }
+
+    function startStopwatch() {
+      if (!stopwatchInterval) {
+        startTime = Date.now();
+        stopwatchInterval = setInterval(updateStopwatch, 1000);
+      }
+    }
+
+    function stopStopwatch() {
+      if (stopwatchInterval) {
+        clearInterval(stopwatchInterval);
+        elapsed += Date.now() - startTime;
+        stopwatchInterval = null;
+      }
+    }
+
+    function resetStopwatch() {
+      stopStopwatch();
+      elapsed = 0;
+      document.getElementById("stopwatch").textContent = "00:00:00";
+    }
+
+    function getTime() {
+      lapCount++;
+      const time = document.getElementById("stopwatch").textContent;
+      const li = document.createElement("li");
+      li.textContent = `Lap ${lapCount} - ${time}`;
+      document.getElementById("timeList").appendChild(li);
+    }
+
+    function clearTimes() {
+      document.getElementById("timeList").innerHTML = '';
+      lapCount = 0;
+    }
+
+    // Switch views
+    function switchToStopwatch() {
+      document.getElementById("clockSection").style.display = "none";
+      document.getElementById("stopwatchSection").style.display = "flex";
+      document.getElementById("backIcon").style.display = "block";
+      document.getElementById("stopwatchIcon").style.display = "none";
+    }
+
+    function switchToClock() {
+      const clockSection = document.getElementById("clockSection");
+      document.getElementById("stopwatchSection").style.display = "none";
+      clockSection.style.display = "flex";
+      clockSection.style.flexDirection = "column";
+      clockSection.style.alignItems = "center";
+      document.getElementById("backIcon").style.display = "none";
+      document.getElementById("stopwatchIcon").style.display = "block";
+    }
+  </script>
+</body>
+</html>
+
